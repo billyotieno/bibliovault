@@ -1,0 +1,214 @@
+// Prisma Schema for BiblioVault
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users Table
+model User {
+  id              Int              @id @default(autoincrement()) @map("user_id")
+  username        String           @unique @db.VarChar(100)
+  email           String           @unique @db.VarChar(255)
+  passwordHash    String           @map("password_hash") @db.VarChar(255)
+  firstName       String?          @map("first_name") @db.VarChar(100)
+  lastName        String?          @map("last_name") @db.VarChar(100)
+  role            String           @default("user") @db.VarChar(50)
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  lastLogin       DateTime?        @map("last_login")
+
+  readingSessions ReadingSession[]
+  readingGoals    ReadingGoal[]
+
+  @@map("users")
+}
+
+// Authors Table
+model Author {
+  id          Int           @id @default(autoincrement()) @map("author_id")
+  firstName   String?       @map("first_name") @db.VarChar(200)
+  lastName    String?       @map("last_name") @db.VarChar(200)
+  fullName    String        @map("full_name") @db.VarChar(400)
+  bio         String?       @db.Text
+  birthDate   DateTime?     @map("birth_date") @db.Date
+  nationality String?       @db.VarChar(100)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  bookAuthors BookAuthor[]
+
+  @@map("authors")
+}
+
+// Genres Table
+model Genre {
+  id            Int          @id @default(autoincrement()) @map("genre_id")
+  genreName     String       @unique @map("genre_name") @db.VarChar(100)
+  description   String?      @db.Text
+  parentGenreId Int?         @map("parent_genre_id")
+  parentGenre   Genre?       @relation("GenreToGenre", fields: [parentGenreId], references: [id])
+  childGenres   Genre[]      @relation("GenreToGenre")
+
+  bookGenres    BookGenre[]
+
+  @@map("genres")
+}
+
+// Tags Table
+model Tag {
+  id        Int        @id @default(autoincrement()) @map("tag_id")
+  tagName   String     @unique @map("tag_name") @db.VarChar(100)
+  color     String?    @db.VarChar(7)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  bookTags  BookTag[]
+
+  @@map("tags")
+}
+
+// Books Table
+model Book {
+  id                Int                    @id @default(autoincrement()) @map("book_id")
+  isbn              String?                @unique @db.VarChar(13)
+  title             String                 @db.VarChar(500)
+  subtitle          String?                @db.VarChar(500)
+  publisher         String?                @db.VarChar(200)
+  publicationDate   DateTime?              @map("publication_date") @db.Date
+  edition           String?                @db.VarChar(100)
+  language          String?                @db.VarChar(50)
+  pages             Int?
+  description       String?                @db.Text
+  coverImageUrl     String?                @map("cover_image_url") @db.VarChar(500)
+  physicalLocation  String?                @map("physical_location") @db.VarChar(200)
+  purchaseDate      DateTime?              @map("purchase_date") @db.Date
+  purchasePrice     Decimal?               @map("purchase_price") @db.Decimal(10, 2)
+  condition         String?                @db.VarChar(50)
+  status            String                 @default("available") @db.VarChar(50)
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  bookAuthors       BookAuthor[]
+  bookGenres        BookGenre[]
+  bookTags          BookTag[]
+  readingSessions   ReadingSession[]
+  borrowingTransactions BorrowingTransaction[]
+
+  @@map("books")
+}
+
+// Book-Authors Junction Table (Many-to-Many)
+model BookAuthor {
+  bookId      Int     @map("book_id")
+  authorId    Int     @map("author_id")
+  authorOrder Int     @default(1) @map("author_order")
+
+  book        Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author      Author  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, authorId])
+  @@map("book_authors")
+}
+
+// Book-Genres Junction Table (Many-to-Many)
+model BookGenre {
+  bookId  Int   @map("book_id")
+  genreId Int   @map("genre_id")
+
+  book    Book  @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, genreId])
+  @@map("book_genres")
+}
+
+// Book-Tags Junction Table (Many-to-Many)
+model BookTag {
+  bookId Int  @map("book_id")
+  tagId  Int  @map("tag_id")
+
+  book   Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, tagId])
+  @@map("book_tags")
+}
+
+// Reading Sessions Table
+model ReadingSession {
+  id          Int       @id @default(autoincrement()) @map("session_id")
+  bookId      Int       @map("book_id")
+  userId      Int       @map("user_id")
+  startDate   DateTime  @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  startPage   Int?      @map("start_page")
+  endPage     Int?      @map("end_page")
+  currentPage Int?      @map("current_page")
+  status      String    @default("reading") @db.VarChar(50)
+  rating      Decimal?  @db.Decimal(3, 2)
+  review      String?   @db.Text
+  notes       String?   @db.Text
+  isCompleted Boolean   @default(false) @map("is_completed")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  book        Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("reading_sessions")
+}
+
+// Borrowers Table
+model Borrower {
+  id                    Int                    @id @default(autoincrement()) @map("borrower_id")
+  firstName             String                 @map("first_name") @db.VarChar(100)
+  lastName              String                 @map("last_name") @db.VarChar(100)
+  email                 String?                @unique @db.VarChar(255)
+  phone                 String?                @db.VarChar(20)
+  address               String?                @db.Text
+  notes                 String?                @db.Text
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+
+  borrowingTransactions BorrowingTransaction[]
+
+  @@map("borrowers")
+}
+
+// Borrowing Transactions Table
+model BorrowingTransaction {
+  id            Int       @id @default(autoincrement()) @map("transaction_id")
+  bookId        Int       @map("book_id")
+  borrowerId    Int       @map("borrower_id")
+  borrowedDate  DateTime  @map("borrowed_date") @db.Date
+  dueDate       DateTime  @map("due_date") @db.Date
+  returnDate    DateTime? @map("return_date") @db.Date
+  status        String    @default("borrowed") @db.VarChar(50)
+  notes         String?   @db.Text
+  reminderSent  Boolean   @default(false) @map("reminder_sent")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  book          Book      @relation(fields: [bookId], references: [id])
+  borrower      Borrower  @relation(fields: [borrowerId], references: [id])
+
+  @@map("borrowing_transactions")
+}
+
+// Reading Goals Table
+model ReadingGoal {
+  id          Int      @id @default(autoincrement()) @map("goal_id")
+  userId      Int      @map("user_id")
+  year        Int
+  targetBooks Int?     @map("target_books")
+  targetPages Int?     @map("target_pages")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("reading_goals")
+}
