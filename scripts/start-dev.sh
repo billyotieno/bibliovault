@@ -41,13 +41,19 @@ else
     npm run dev > /tmp/bibliovault-backend.log 2>&1 &
     BACKEND_PID=$!
     echo $BACKEND_PID > /tmp/bibliovault-backend.pid
-    sleep 3
-    if lsof -ti:3000 > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ Backend running on http://localhost:3000${NC}"
-        echo -e "   PID: $BACKEND_PID"
-    else
-        echo -e "${RED}❌ Failed to start backend${NC}"
-    fi
+    echo -e "   Waiting for backend to start..."
+    for i in {1..10}; do
+        sleep 1
+        if lsof -ti:3000 > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Backend running on http://localhost:3000${NC}"
+            echo -e "   PID: $BACKEND_PID"
+            break
+        fi
+        if [ $i -eq 10 ]; then
+            echo -e "${RED}❌ Failed to start backend after 10 seconds${NC}"
+            echo -e "${YELLOW}   Check logs: tail -f /tmp/bibliovault-backend.log${NC}"
+        fi
+    done
 fi
 
 echo ""
@@ -61,13 +67,19 @@ else
     npm run dev > /tmp/bibliovault-frontend.log 2>&1 &
     FRONTEND_PID=$!
     echo $FRONTEND_PID > /tmp/bibliovault-frontend.pid
-    sleep 5
-    if lsof -ti:3001 > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ Frontend running on http://localhost:3001${NC}"
-        echo -e "   PID: $FRONTEND_PID"
-    else
-        echo -e "${RED}❌ Failed to start frontend${NC}"
-    fi
+    echo -e "   Waiting for frontend to start..."
+    for i in {1..15}; do
+        sleep 1
+        if lsof -ti:3001 > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Frontend running on http://localhost:3001${NC}"
+            echo -e "   PID: $FRONTEND_PID"
+            break
+        fi
+        if [ $i -eq 15 ]; then
+            echo -e "${RED}❌ Failed to start frontend after 15 seconds${NC}"
+            echo -e "${YELLOW}   Check logs: tail -f /tmp/bibliovault-frontend.log${NC}"
+        fi
+    done
 fi
 
 echo ""
