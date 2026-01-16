@@ -2,14 +2,26 @@
 
 ## 🚀 Quick Start
 
-### Current Status: READY FOR DEVELOPMENT ✅
+### ⚡ Using Management Scripts (Recommended)
 
-Both frontend and backend servers are currently running!
+Start all servers with one command:
+```bash
+./scripts/start-dev.sh    # Start all servers
+./scripts/stop-dev.sh     # Stop all servers
+./scripts/restart-dev.sh  # Restart all servers
+./scripts/status.sh       # Check server status
+./scripts/deploy.sh       # Deploy updates
+```
+
+See [scripts/README.md](scripts/README.md) for detailed documentation.
+
+### 🌐 Access Points
 
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:3000
 - **API Health Check**: http://localhost:3000/api/health
 - **Database**: PostgreSQL (bibliovault)
+- **Prisma Studio**: http://localhost:5555 (run `cd backend && npx prisma studio`)
 
 ---
 
