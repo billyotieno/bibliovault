@@ -1,39 +1,52 @@
-import axios from 'axios';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+interface ApiOptions {
+  method?: string;
+  body?: any;
+  token?: string | null;
+}
 
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
+export async function apiClient(endpoint: string, options: ApiOptions = {}) {
+  const { method = 'GET', body, token } = options;
+  
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-  },
-});
+  };
 
-// Request interceptor for adding auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-);
 
-// Response interceptor for handling errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
+  const config: RequestInit = {
+    method,
+    headers,
+  };
+
+  if (body) {
+    config.body = JSON.stringify(body);
   }
-);
 
-export default api;
+  const response = await fetch(`${API_URL}${endpoint}`, config);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Something went wrong');
+  }
+
+  return data;
+}
+
+// Auth API
+export const authApi = {
+  register: (userData: { username: string; email: string; password: string; firstName?: string; lastName?: string }) =>
+    apiClient('/auth/register', { method: 'POST', body: userData }),
+  
+  login: (credentials: { email: string; password: string }) =>
+    apiClient('/auth/login', { method: 'POST', body: credentials }),
+  
+  getMe: (token: string) =>
+    apiClient('/auth/me', { token }),
+  
+  logout: () =>
+    apiClient('/auth/logout', { method: 'POST' }),
+};
