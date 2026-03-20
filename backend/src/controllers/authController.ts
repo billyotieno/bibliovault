@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'bibliovault-dev-secret-key-change-in-production-2026';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
 
 // Register new user
 export const register = async (req: Request, res: Response) => {
